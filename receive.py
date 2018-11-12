@@ -4,7 +4,7 @@ import json
 
 HOST = 'localhost'
 PORT = 6379
-MSG_COUNT = 1000
+MSG_COUNT = 250000
 
 r = redis.Redis (host = HOST, port = PORT)
 pub = r.pubsub ()
@@ -22,16 +22,16 @@ while True:
             message_id = body['message_id']
 
             if sender_id not in last_message_ids:
-                last_message_ids[sender_id] = -1
-            expect_message_id = last_message_ids[sender_id] + 1
+                last_message_ids[sender_id] = {'message_id': -1, 'start_time': time.time ()}
+            expect_message_id = last_message_ids[sender_id]['message_id'] + 1
 
             if message_id != expect_message_id:
-                print ("Error, message ID {}, received from sender {}, is out of order with last message {}, expected {}".format (message_id, sender_id, last_message_ids[sender_id], expect_message_id))
+                print ("Error, message ID {}, received from sender {}, is out of order with last message {}, expected {}".format (message_id, sender_id, last_message_ids[sender_id]['message_id'], expect_message_id))
 
-            last_message_ids[sender_id] = int(message_id)
+            last_message_ids[sender_id]['message_id'] = int(message_id)
 
             if message_id + 1 == MSG_COUNT:
-                print ("Received {} messages from sender {}".format (MSG_COUNT, sender_id))
+                print ("Received {} messages from sender {} in {} seconds".format (MSG_COUNT, sender_id, (time.time () - last_message_ids[sender_id]['start_time'])))
 
             # print ("Processed message {}: {}".format (message_id, body))
         else:
